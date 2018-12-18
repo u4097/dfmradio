@@ -159,6 +159,11 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         return Service.START_NOT_STICKY
     }
 
+    override fun onBind(intent: Intent): IBinder? {
+        return iBinder
+    }
+
+
     override fun onUnbind(intent: Intent): Boolean {
 
         if (status == PlaybackStatus.IDLE) {
@@ -297,36 +302,28 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
 
 
     override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun onSeekProcessed() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun onTracksChanged(trackGroups: TrackGroupArray?, trackSelections: TrackSelectionArray?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
 
     override fun onLoadingChanged(isLoading: Boolean) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun onPositionDiscontinuity(reason: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun onRepeatModeChanged(repeatMode: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun onAudioFocusChange(focusChange: Int) {
@@ -356,9 +353,6 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         }
     }
 
-    override fun onBind(intent: Intent): IBinder? {
-        return null
-    }
 
     fun playOrPause(url: String) {
         if (streamUrl != null && streamUrl == url) {
