@@ -1,4 +1,4 @@
 package ru.rmg.dfm.player
 
-class MediaNotificationManager {
+class MediaNotificationManager(radioService: RadioService) {
 }
