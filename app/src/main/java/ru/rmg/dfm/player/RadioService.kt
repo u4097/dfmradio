@@ -5,17 +5,23 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
+import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.telephony.TelephonyManager
 import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
+import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
+import com.google.android.exoplayer2.util.Util
 import ru.rmg.dfm.R
 
 class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusChangeListener {
@@ -66,7 +72,42 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         wifiLock = (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager)
             .createWifiLock(WifiManager.WIFI_MODE_FULL, "mcScPAmpLock")
 
+        mediaSession = MediaSessionCompat(this, javaClass.simpleName)
+        transportControls = mediaSession!!.controller.transportControls
+        mediaSession!!.isActive = true
+        mediaSession!!.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+        mediaSession!!.setMetadata(
+            MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "...")
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, strAppName)
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, strLiveBroadcast)
+                .build()
+        )
+        mediaSession!!.setCallback(mediasSessionCallback)
 
+
+    }
+
+    private val mediasSessionCallback = object : MediaSessionCompat.Callback() {
+        override fun onPause() {
+            super.onPause()
+
+            pause()
+        }
+
+        override fun onStop() {
+            super.onStop()
+
+            stop()
+
+            notificationManager?.cancelNotify()
+        }
+
+        override fun onPlay() {
+            super.onPlay()
+
+            resume()
+        }
     }
 
     private val becomingNoisyReceiver = object : BroadcastReceiver() {
@@ -76,12 +117,50 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         }
     }
 
+    fun play(streamUrl: String) {
+
+        this.streamUrl = streamUrl
+
+        if (wifiLock != null && !wifiLock!!.isHeld()) {
+
+            wifiLock!!.acquire()
+
+        }
+
+        //        DefaultHttpDataSourceFactory dataSourceFactory = new DefaultHttpDataSourceFactory(getUserAgent());
+
+        val dataSourceFactory = DefaultDataSourceFactory(this, getUserAgent(), BANDWIDTH_METER)
+
+        val mediaSource = ExtractorMediaSource.Factory(dataSourceFactory)
+            .setExtractorsFactory(DefaultExtractorsFactory())
+            .createMediaSource(Uri.parse(streamUrl))
+
+        exoPlayer?.prepare(mediaSource)
+        exoPlayer?.setPlayWhenReady(true)
+    }
+
+
     fun pause() {
 
         exoPlayer?.playWhenReady = false
 
         audioManager?.abandonAudioFocus(this)
         wifiLockRelease()
+    }
+
+    fun stop() {
+
+        exoPlayer?.stop()
+
+        audioManager?.abandonAudioFocus(this)
+        wifiLockRelease()
+    }
+
+    fun resume() {
+
+        if (streamUrl != null) {
+            play(streamUrl!!)
+        }
     }
 
 
@@ -148,6 +227,11 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
 
             wifiLock!!.release()
         }
+    }
+
+    private fun getUserAgent(): String {
+
+        return Util.getUserAgent(this, javaClass.simpleName)
     }
 
 }

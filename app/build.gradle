@@ -35,6 +35,9 @@ dependencies {
     // ExoPlayer
     implementation "com.google.android.exoplayer:exoplayer:$exoPlayerVersion"
 
+    // Gson
+    implementation "com.google.code.gson:gson:$gsonVersion"
+
     // Test
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'

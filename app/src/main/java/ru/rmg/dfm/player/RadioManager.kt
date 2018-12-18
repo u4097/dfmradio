@@ -10,19 +10,21 @@ import org.greenrobot.eventbus.EventBus
 class RadioManager(val context: Context) {
 
     private var serviceBound: Boolean = false
-    private var instance: RadioManager? = null
     private var service: RadioService? = null
+
+    interface Factory<T> {
+        fun create(context: Context): T
+    }
+
 
     init {
         serviceBound = false
     }
 
-    fun with(context: Context): RadioManager {
 
-        if (instance == null)
-            instance = RadioManager(context)
+    companion object : Factory<RadioManager> {
+        override fun create(context: Context): RadioManager = RadioManager(context)
 
-        return instance as RadioManager
     }
 
 

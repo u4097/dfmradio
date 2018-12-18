@@ -19,6 +19,7 @@ buildscript {
 
         /* Media */
         exoPlayerVersion = '2.8.2'
+
     }
     repositories {
         google()
