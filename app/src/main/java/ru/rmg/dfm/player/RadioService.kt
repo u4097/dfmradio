@@ -124,13 +124,8 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         telephonyManager!!.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE)
 
         handler = Handler()
-        val bandwidthMeter = DefaultBandwidthMeter()
-        val renderersFactory = DefaultRenderersFactory(applicationContext)
-        val trackSelectionFactory = AdaptiveTrackSelection.Factory(bandwidthMeter)
-        val trackSelector = DefaultTrackSelector(trackSelectionFactory)
 
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, createDefaultLoadControl())
-        exoPlayer.addListener(this)
+        initExoPlayer()
 
         registerReceiver(becomingNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
 
@@ -139,14 +134,30 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
     }
 
     private fun createDefaultLoadControl(
-        minBufferMs: Int =  5 * 60 * 1000,
-        maxBufferMs: Int =  10 * 60 * 1000,
-        bufferForPlaybackMs: Int = DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+        minBufferMs: Int =  50_000,
+        maxBufferMs: Int =  75_000,
+        bufferForPlaybackMs: Int = 25_000,
         bufferForPlaybackAfterRebufferMs: Int = DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
     ): DefaultLoadControl =
         DefaultLoadControl.Builder()
             .setBufferDurationsMs(minBufferMs, maxBufferMs, bufferForPlaybackMs, bufferForPlaybackAfterRebufferMs)
             .createDefaultLoadControl()
+
+
+    private fun initExoPlayer() {
+        // ExoPlayer
+        val bandwidthMeter = DefaultBandwidthMeter()
+        val renderersFactory = DefaultRenderersFactory(applicationContext)
+        val trackSelectionFactory = AdaptiveTrackSelection.Factory(bandwidthMeter)
+        val trackSelector = DefaultTrackSelector(trackSelectionFactory)
+
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(
+            renderersFactory,
+            trackSelector,
+            createDefaultLoadControl())
+        exoPlayer.addListener(this)
+    }
+
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
 
@@ -260,14 +271,14 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
             .setExtractorsFactory(DefaultExtractorsFactory())
             .createMediaSource(Uri.parse(streamUrl))
 
-        exoPlayer?.prepare(mediaSource)
-        exoPlayer?.playWhenReady = true
+        exoPlayer.prepare(mediaSource)
+        exoPlayer.playWhenReady = true
     }
 
 
     fun pause() {
 
-        exoPlayer?.playWhenReady = false
+        exoPlayer.playWhenReady = false
 
         audioManager?.abandonAudioFocus(this)
         wifiLockRelease()
@@ -275,7 +286,7 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
 
     fun stop() {
 
-        exoPlayer?.stop()
+        exoPlayer.stop()
 
         audioManager?.abandonAudioFocus(this)
         wifiLockRelease()

@@ -25,6 +25,7 @@
                 android:layout_height="60dp"
                 android:orientation="horizontal"
                 android:visibility="gone"
+                tools:visibility="visible"
                 android:background="@android:color/white">
 
             <TextView

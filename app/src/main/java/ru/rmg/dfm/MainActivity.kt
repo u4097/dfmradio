@@ -22,6 +22,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var streamURL: String
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -34,6 +35,8 @@ class MainActivity : AppCompatActivity() {
         initView()
     }
 
+    private lateinit var shoutcast: Shoutcast
+
     private fun initView() {
         playTrigger.setOnClickListener {
             if (!TextUtils.isEmpty(streamURL))
@@ -43,7 +46,7 @@ class MainActivity : AppCompatActivity() {
 
         listview.setOnItemClickListener { parent, view, position, id ->
 
-            val shoutcast = parent.getItemAtPosition(position) as Shoutcast
+            shoutcast = parent.getItemAtPosition(position) as Shoutcast
 
             name.text = shoutcast.getName()
 
@@ -95,6 +98,11 @@ class MainActivity : AppCompatActivity() {
         when (status) {
 
             PlaybackStatus.LOADING -> {
+                name.text = "Загрузка..."
+            }
+
+            PlaybackStatus.PLAYING -> {
+                name.text = shoutcast.getName()
             }
 
             PlaybackStatus.ERROR ->
