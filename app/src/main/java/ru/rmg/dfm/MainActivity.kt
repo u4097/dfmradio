@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var radioManager: RadioManager
 
-    internal lateinit var streamURL: String
+    private lateinit var streamURL: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun initView() {
         playTrigger.setOnClickListener {
-            if (TextUtils.isEmpty(streamURL))
+            if (!TextUtils.isEmpty(streamURL))
 
                 radioManager.playOrPause(streamURL)
         }

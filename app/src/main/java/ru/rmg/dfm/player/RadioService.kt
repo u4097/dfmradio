@@ -151,7 +151,7 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         }
 
         when {
-            action!!.equals(ACTION_PLAY, ignoreCase = true) -> transportControls?.play()
+            action.equals(ACTION_PLAY, ignoreCase = true) -> transportControls?.play()
             action.equals(ACTION_PAUSE, ignoreCase = true) -> transportControls?.pause()
             action.equals(ACTION_STOP, ignoreCase = true) -> transportControls?.stop()
         }
