@@ -45,9 +45,9 @@ class MainActivity : AppCompatActivity() {
 
             val shoutcast = parent.getItemAtPosition(position) as Shoutcast
 
-            name.setText(shoutcast.getName())
+            name.text = shoutcast.getName()
 
-            sub_player.setVisibility(View.VISIBLE)
+            sub_player.visibility = View.VISIBLE
 
             streamURL = shoutcast.getUrl()!!
 

@@ -28,10 +28,6 @@ class RadioManager(val context: Context) {
     }
 
 
-    fun getService(): RadioService? {
-        return service
-    }
-
     fun playOrPause(streamUrl: String) {
 
         service?.playOrPause(streamUrl)

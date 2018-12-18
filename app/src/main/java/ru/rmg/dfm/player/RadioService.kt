@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioManager
 import android.net.Uri
 import android.net.wifi.WifiManager
@@ -13,28 +14,34 @@ import android.os.IBinder
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
+import org.greenrobot.eventbus.EventBus
 import ru.rmg.dfm.R
 
 class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusChangeListener {
 
-    val ACTION_PLAY = "ru.rmg.dfm.player.ACTION_PLAY"
-    val ACTION_PAUSE = "ru.rmg.dfm.player.ACTION_PAUSE"
-    val ACTION_STOP = "ru.rmg.dfm.player.ACTION_STOP"
+    companion object {
+        val ACTION_PLAY = "ru.rmg.dfm.player.ACTION_PLAY"
+        val ACTION_PAUSE = "ru.rmg.dfm.player.ACTION_PAUSE"
+        val ACTION_STOP = "ru.rmg.dfm.player.ACTION_STOP"
+    }
 
     private val iBinder = LocalBinder()
 
     private var handler: Handler? = null
     private val BANDWIDTH_METER = DefaultBandwidthMeter()
-    private var exoPlayer: SimpleExoPlayer? = null
+    private lateinit var exoPlayer: SimpleExoPlayer
     private var mediaSession: MediaSessionCompat? = null
     private var transportControls: MediaControllerCompat.TransportControls? = null
 
@@ -56,6 +63,31 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
     inner class LocalBinder : Binder() {
         val service: RadioService
             get() = this@RadioService
+    }
+
+    private val phoneStateListener = object : PhoneStateListener() {
+
+        override fun onCallStateChanged(state: Int, incomingNumber: String) {
+
+            if (state == TelephonyManager.CALL_STATE_OFFHOOK || state == TelephonyManager.CALL_STATE_RINGING) {
+
+                if (!isPlaying()) {
+                    return
+                }
+
+                onGoingCall = true
+                stop()
+
+            } else if (state == TelephonyManager.CALL_STATE_IDLE) {
+
+                if (!onGoingCall) {
+                    return
+                }
+
+                onGoingCall = false
+                resume()
+            }
+        }
     }
 
     override fun onCreate() {
@@ -85,6 +117,19 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         )
         mediaSession!!.setCallback(mediasSessionCallback)
 
+        telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        telephonyManager!!.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE)
+
+        handler = Handler()
+        val bandwidthMeter = DefaultBandwidthMeter()
+        val trackSelectionFactory = AdaptiveTrackSelection.Factory(bandwidthMeter)
+        val trackSelector = DefaultTrackSelector(trackSelectionFactory)
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(applicationContext, trackSelector)
+        exoPlayer.addListener(this)
+
+        registerReceiver(becomingNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
+
+        status = PlaybackStatus.IDLE
 
     }
 
@@ -117,7 +162,7 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         }
     }
 
-    fun play(streamUrl: String) {
+    private fun play(streamUrl: String) {
 
         this.streamUrl = streamUrl
 
@@ -136,7 +181,7 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
             .createMediaSource(Uri.parse(streamUrl))
 
         exoPlayer?.prepare(mediaSource)
-        exoPlayer?.setPlayWhenReady(true)
+        exoPlayer?.playWhenReady = true
     }
 
 
@@ -169,6 +214,27 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
     }
 
 
+    override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+        status = when (playbackState) {
+            Player.STATE_BUFFERING -> PlaybackStatus.LOADING
+            Player.STATE_ENDED -> PlaybackStatus.STOPPED
+            Player.STATE_IDLE -> PlaybackStatus.IDLE
+            Player.STATE_READY -> if (playWhenReady) PlaybackStatus.PLAYING else PlaybackStatus.PAUSED
+            else -> PlaybackStatus.IDLE
+        }
+
+        if (status != PlaybackStatus.IDLE) {
+            notificationManager?.startNotify(status!!)
+        }
+
+        EventBus.getDefault().post(status)
+    }
+
+    override fun onPlayerError(error: ExoPlaybackException?) {
+        EventBus.getDefault().post(PlaybackStatus.ERROR)
+    }
+
+
     override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters?) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -181,9 +247,6 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun onPlayerError(error: ExoPlaybackException?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
 
     override fun onLoadingChanged(isLoading: Boolean) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -205,20 +268,65 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun onAudioFocusChange(focusChange: Int) {
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_GAIN -> {
 
-    override fun onAudioFocusChange(p0: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                exoPlayer.volume = 0.8f
+
+                resume()
+            }
+
+            AudioManager.AUDIOFOCUS_LOSS ->
+
+                stop()
+
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT ->
+
+                if (isPlaying()) {
+                    pause()
+                }
+
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK ->
+
+                if (isPlaying()) {
+                    exoPlayer.volume = 0.1f
+                }
+        }
     }
 
     override fun onBind(intent: Intent): IBinder? {
         return null
     }
 
-    fun playOrPause(streamUrl: String) {
+    fun playOrPause(url: String) {
+        if (streamUrl != null && streamUrl == url) {
 
+            if (!isPlaying()) {
+
+                play(streamUrl!!)
+
+            } else {
+
+                pause()
+            }
+
+        } else {
+
+            if (isPlaying()) {
+
+                pause()
+
+            }
+
+            play(url)
+        }
+
+    }
+
+    fun isPlaying(): Boolean {
+
+        return this.status == PlaybackStatus.PLAYING
     }
 
     private fun wifiLockRelease() {
@@ -232,6 +340,11 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
     private fun getUserAgent(): String {
 
         return Util.getUserAgent(this, javaClass.simpleName)
+    }
+
+    fun getMediaSession(): MediaSessionCompat? {
+
+        return mediaSession
     }
 
 }
