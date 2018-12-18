@@ -103,16 +103,17 @@ class MainActivity : AppCompatActivity(), IcyDataSource.Listener {
     @Subscribe
     fun onEvent(status: String) {
 
+
         when (status) {
 
             PlaybackStatus.LOADING -> {
                 name.text = "Загрузка..."
             }
 
-            PlaybackStatus.PLAYING -> {
+            PlaybackStatus.PLAYING, PlaybackStatus.IDLE, PlaybackStatus.PLAYING, PlaybackStatus.STOPPED -> {
 
                 name.text = if (track != null) {
-                     "${track.artist} - ${track.title}"
+                    "${track.artist} - ${track.title}"
                 } else {
                     shoutcast.getName()
                 }
@@ -135,6 +136,7 @@ class MainActivity : AppCompatActivity(), IcyDataSource.Listener {
 
     override fun onMetaData(artist: String, title: String) {
         track =  Track(artist,title,true,false)
+
     }
 
     override fun onServerDate(serverDate: Date?) {
