@@ -18,12 +18,14 @@ import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import android.text.TextUtils
 import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.DefaultLoadControl.*
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
+import com.google.android.exoplayer2.upstream.DefaultAllocator
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
@@ -123,9 +125,11 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
 
         handler = Handler()
         val bandwidthMeter = DefaultBandwidthMeter()
+        val renderersFactory = DefaultRenderersFactory(applicationContext)
         val trackSelectionFactory = AdaptiveTrackSelection.Factory(bandwidthMeter)
         val trackSelector = DefaultTrackSelector(trackSelectionFactory)
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(applicationContext, trackSelector)
+
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, createDefaultLoadControl())
         exoPlayer.addListener(this)
 
         registerReceiver(becomingNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
@@ -133,6 +137,16 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         status = PlaybackStatus.IDLE
 
     }
+
+    private fun createDefaultLoadControl(
+        minBufferMs: Int =  5 * 60 * 1000,
+        maxBufferMs: Int =  10 * 60 * 1000,
+        bufferForPlaybackMs: Int = DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+        bufferForPlaybackAfterRebufferMs: Int = DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+    ): DefaultLoadControl =
+        DefaultLoadControl.Builder()
+            .setBufferDurationsMs(minBufferMs, maxBufferMs, bufferForPlaybackMs, bufferForPlaybackAfterRebufferMs)
+            .createDefaultLoadControl()
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
 
