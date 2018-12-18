@@ -2,16 +2,16 @@ package ru.rmg.dfm.player
 
 object PlaybackStatus {
 
-    val IDLE = "PlaybackStatus_IDLE"
+    const val IDLE = "PlaybackStatus_IDLE"
 
-    val LOADING = "PlaybackStatus_LOADING"
+    const val LOADING = "PlaybackStatus_LOADING"
 
-    val PLAYING = "PlaybackStatus_PLAYING"
+    const val PLAYING = "PlaybackStatus_PLAYING"
 
-    val PAUSED = "PlaybackStatus_PAUSED"
+    const val PAUSED = "PlaybackStatus_PAUSED"
 
-    val STOPPED = "PlaybackStatus_STOPPED"
+    const val STOPPED = "PlaybackStatus_STOPPED"
 
-    val ERROR = "PlaybackStatus_ERROR"
+    const val ERROR = "PlaybackStatus_ERROR"
 
 }

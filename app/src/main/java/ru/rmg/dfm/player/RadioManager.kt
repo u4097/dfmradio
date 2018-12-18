@@ -5,12 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.support.v4.media.session.MediaSessionCompat
 import org.greenrobot.eventbus.EventBus
 import ru.rmg.dfm.player.datasource.IcyDataSource
 
 class RadioManager(
-    val context: Context,
-    val dataListener: IcyDataSource.Listener
+    private val context: Context,
+    private val dataListener: IcyDataSource.Listener
 ) {
 
     private var serviceBound: Boolean = false
@@ -21,13 +22,9 @@ class RadioManager(
     }
 
 
-    init {
-        serviceBound = false
-    }
-
-
     companion object : Factory<RadioManager> {
-        override fun create(context: Context, dataListener: IcyDataSource.Listener): RadioManager = RadioManager(context, dataListener)
+        override fun create(context: Context, dataListener: IcyDataSource.Listener): RadioManager =
+            RadioManager(context, dataListener)
 
     }
 
@@ -43,7 +40,7 @@ class RadioManager(
         context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
 
         if (service != null)
-            EventBus.getDefault().post(service!!.getStatus())
+            EventBus.getDefault().post(service!!.status)
     }
 
     fun unbind() {

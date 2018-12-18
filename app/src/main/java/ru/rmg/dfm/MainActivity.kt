@@ -1,6 +1,7 @@
 package ru.rmg.dfm
 
 import android.os.Bundle
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v7.app.AppCompatActivity
 import android.text.TextUtils
 import android.util.TimingLogger
@@ -30,13 +31,15 @@ class MainActivity : AppCompatActivity(), IcyDataSource.Listener {
 
     private lateinit var track: Track
 
+    private lateinit var metadata: MediaMetadataCompat
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        radioManager = RadioManager.create(this,this)
+        radioManager = RadioManager.create(this, this)
+
 
         listview.adapter = ShoutcastListAdapter(this, ShoutcastHelper.retrieveShoutcasts(this))
 
@@ -110,7 +113,9 @@ class MainActivity : AppCompatActivity(), IcyDataSource.Listener {
                 name.text = "Загрузка..."
             }
 
-            PlaybackStatus.PLAYING, PlaybackStatus.IDLE, PlaybackStatus.PLAYING, PlaybackStatus.STOPPED -> {
+            PlaybackStatus.PLAYING,
+            PlaybackStatus.IDLE,
+            PlaybackStatus.STOPPED -> {
 
                 updateSongInfo()
 
@@ -119,7 +124,7 @@ class MainActivity : AppCompatActivity(), IcyDataSource.Listener {
             PlaybackStatus.ERROR ->
 
                 Toast.makeText(this, R.string.no_stream, Toast.LENGTH_SHORT).show()
-        }// loading
+        }
 
         playTrigger.setImageResource(
             if (status == PlaybackStatus.PLAYING)
@@ -131,15 +136,18 @@ class MainActivity : AppCompatActivity(), IcyDataSource.Listener {
     }
 
     private fun updateSongInfo() {
-        name.text = if (track != null) {
-            "${track.artist} - ${track.title}"
-        } else {
-            shoutcast.getName()
+        runOnUiThread {
+            name.text = if (track != null) {
+                "${track.artist} - ${track.title}"
+            } else {
+                shoutcast.getName()
+            }
+
         }
     }
 
     override fun onMetaData(artist: String, title: String) {
-        track =  Track(artist,title,true,false)
+        track = Track(artist, title, true, false)
         updateSongInfo()
 
     }

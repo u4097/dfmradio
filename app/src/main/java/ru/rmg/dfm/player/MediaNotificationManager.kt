@@ -11,6 +11,9 @@ import android.graphics.BitmapFactory
 import android.os.Build
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationManagerCompat
+import ru.rmg.dfm.Constants.ACTION_PAUSE
+import ru.rmg.dfm.Constants.ACTION_PLAY
+import ru.rmg.dfm.Constants.ACTION_STOP
 import ru.rmg.dfm.MainActivity
 import ru.rmg.dfm.R
 
@@ -41,19 +44,19 @@ class MediaNotificationManager(private val service: RadioService) {
 
         var icon = R.drawable.ic_pause_white
         val playbackAction = Intent(service, RadioService::class.java)
-        playbackAction.action = RadioService.ACTION_PAUSE
+        playbackAction.action = ACTION_PAUSE
         var action = PendingIntent.getService(service, 1, playbackAction, 0)
 
         if (playbackStatus == PlaybackStatus.PAUSED) {
 
             icon = R.drawable.ic_play_white
-            playbackAction.action = RadioService.ACTION_PLAY
+            playbackAction.action = ACTION_PLAY
             action = PendingIntent.getService(service, 2, playbackAction, 0)
 
         }
 
         val stopIntent = Intent(service, RadioService::class.java)
-        stopIntent.action = RadioService.ACTION_STOP
+        stopIntent.action = ACTION_STOP
         val stopAction = PendingIntent.getService(service, 3, stopIntent, 0)
 
         val intent = Intent(service, MainActivity::class.java)
@@ -84,7 +87,7 @@ class MediaNotificationManager(private val service: RadioService) {
             .setWhen(System.currentTimeMillis())
             .setStyle(
                 android.support.v4.media.app.NotificationCompat.MediaStyle()
-                    .setMediaSession(service.getMediaSession()?.sessionToken)
+                    .setMediaSession(service.mediaSession.sessionToken)
                     .setShowActionsInCompactView(0, 1)
                     .setShowCancelButton(true)
                     .setCancelButtonIntent(stopAction)
