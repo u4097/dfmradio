@@ -1,26 +1,34 @@
 package ru.rmg.dfm
 
-import android.support.v7.app.AppCompatActivity
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.content_main.*
 import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
 import android.text.TextUtils
+import android.util.TimingLogger
 import android.view.View
 import android.widget.Toast
-import kotlinx.android.synthetic.main.list_item.*
+import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.content_main.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import ru.rmg.dfm.player.PlaybackStatus
 import ru.rmg.dfm.player.RadioManager
+import ru.rmg.dfm.player.datasource.IcyDataSource
+import ru.rmg.dfm.player.entity.Track
 import ru.rmg.dfm.util.Shoutcast
 import ru.rmg.dfm.util.ShoutcastHelper
 import ru.rmg.dfm.util.ShoutcastListAdapter
+import timber.log.Timber
+import java.util.*
 
-class MainActivity : AppCompatActivity() {
+
+class MainActivity : AppCompatActivity(), IcyDataSource.Listener {
+
 
     private lateinit var radioManager: RadioManager
 
     private lateinit var streamURL: String
+
+    private lateinit var track: Track
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,7 +36,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        radioManager = RadioManager.create(this)
+        radioManager = RadioManager.create(this,this)
 
         listview.adapter = ShoutcastListAdapter(this, ShoutcastHelper.retrieveShoutcasts(this))
 
@@ -44,7 +52,7 @@ class MainActivity : AppCompatActivity() {
                 radioManager.playOrPause(streamURL)
         }
 
-        listview.setOnItemClickListener { parent, view, position, id ->
+        listview.setOnItemClickListener { parent, _, position, _ ->
 
             shoutcast = parent.getItemAtPosition(position) as Shoutcast
 
@@ -102,7 +110,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             PlaybackStatus.PLAYING -> {
-                name.text = shoutcast.getName()
+
+                name.text = if (track != null) {
+                     "${track.artist} - ${track.title}"
+                } else {
+                    shoutcast.getName()
+                }
+
             }
 
             PlaybackStatus.ERROR ->
@@ -117,6 +131,14 @@ class MainActivity : AppCompatActivity() {
                 R.drawable.ic_play_arrow_black
         )
 
+    }
+
+    override fun onMetaData(artist: String, title: String) {
+        track =  Track(artist,title,true,false)
+    }
+
+    override fun onServerDate(serverDate: Date?) {
+        Timber.d("Date: %s", serverDate)
     }
 
 

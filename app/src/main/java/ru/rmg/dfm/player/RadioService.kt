@@ -18,27 +18,41 @@ import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
 import android.text.TextUtils
 import com.google.android.exoplayer2.*
-import com.google.android.exoplayer2.DefaultLoadControl.*
+import com.google.android.exoplayer2.DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
-import com.google.android.exoplayer2.upstream.DefaultAllocator
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import org.greenrobot.eventbus.EventBus
 import ru.rmg.dfm.R
+import ru.rmg.dfm.player.datasource.IcyDataSource
+import ru.rmg.dfm.player.datasource.IcyDataSourceFactory
+import timber.log.Timber
+import java.util.*
 
-class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusChangeListener {
+class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusChangeListener, IcyDataSource.Listener {
+
+
+    override fun onMetaData(artist: String, title: String) {
+        dataListener?.onMetaData(artist, title)
+    }
+
+    override fun onServerDate(serverDate: Date?) {
+        dataListener?.onServerDate(serverDate)
+    }
 
     companion object {
         val ACTION_PLAY = "ru.rmg.dfm.player.ACTION_PLAY"
         val ACTION_PAUSE = "ru.rmg.dfm.player.ACTION_PAUSE"
         val ACTION_STOP = "ru.rmg.dfm.player.ACTION_STOP"
     }
+
+
+    var dataListener: IcyDataSource.Listener? = null
 
     private val iBinder = LocalBinder()
 
@@ -265,7 +279,13 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
 
         //        DefaultHttpDataSourceFactory dataSourceFactory = new DefaultHttpDataSourceFactory(getUserAgent());
 
-        val dataSourceFactory = DefaultDataSourceFactory(this, getUserAgent(), BANDWIDTH_METER)
+/*        val dataSourceFactory = DefaultDataSourceFactory(
+            this,
+            getUserAgent(),
+            BANDWIDTH_METER)*/
+
+
+        val dataSourceFactory = IcyDataSourceFactory(this)
 
         val mediaSource = ExtractorMediaSource.Factory(dataSourceFactory)
             .setExtractorsFactory(DefaultExtractorsFactory())

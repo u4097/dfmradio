@@ -33,12 +33,24 @@ dependencies {
     implementation "com.android.support.constraint:constraint-layout:$constraintVersion"
     implementation "org.greenrobot:eventbus:$eventBusVersion"
 
+    // Timber
+    implementation 'com.jakewharton.timber:timber:4.7.1'
+
 
     // ExoPlayer
     implementation "com.google.android.exoplayer:exoplayer:$exoPlayerVersion"
 
     // Gson
     implementation "com.google.code.gson:gson:$gsonVersion"
+
+
+    /* Networking */
+    implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
+    implementation "com.squareup.retrofit2:converter-gson:$retrofitVersion"
+    implementation "com.squareup.retrofit2:adapter-rxjava2:$retrofitVersion"
+    implementation "com.squareup.okhttp3:logging-interceptor:$okHttpVersion"
+    implementation "com.squareup.okhttp3:okhttp:$okHttpVersion"
+
 
     // Test
     testImplementation 'junit:junit:4.12'

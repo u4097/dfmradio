@@ -6,14 +6,18 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import org.greenrobot.eventbus.EventBus
+import ru.rmg.dfm.player.datasource.IcyDataSource
 
-class RadioManager(val context: Context) {
+class RadioManager(
+    val context: Context,
+    val dataListener: IcyDataSource.Listener
+) {
 
     private var serviceBound: Boolean = false
     private var service: RadioService? = null
 
     interface Factory<T> {
-        fun create(context: Context): T
+        fun create(context: Context, dataListener: IcyDataSource.Listener): T
     }
 
 
@@ -23,7 +27,7 @@ class RadioManager(val context: Context) {
 
 
     companion object : Factory<RadioManager> {
-        override fun create(context: Context): RadioManager = RadioManager(context)
+        override fun create(context: Context, dataListener: IcyDataSource.Listener): RadioManager = RadioManager(context, dataListener)
 
     }
 
@@ -52,6 +56,7 @@ class RadioManager(val context: Context) {
         override fun onServiceConnected(arg0: ComponentName, binder: IBinder) {
 
             service = (binder as RadioService.LocalBinder).service
+            service!!.dataListener = dataListener
             serviceBound = true
         }
 
