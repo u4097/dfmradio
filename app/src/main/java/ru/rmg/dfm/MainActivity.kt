@@ -112,11 +112,7 @@ class MainActivity : AppCompatActivity(), IcyDataSource.Listener {
 
             PlaybackStatus.PLAYING, PlaybackStatus.IDLE, PlaybackStatus.PLAYING, PlaybackStatus.STOPPED -> {
 
-                name.text = if (track != null) {
-                    "${track.artist} - ${track.title}"
-                } else {
-                    shoutcast.getName()
-                }
+                updateSongInfo()
 
             }
 
@@ -134,8 +130,17 @@ class MainActivity : AppCompatActivity(), IcyDataSource.Listener {
 
     }
 
+    private fun updateSongInfo() {
+        name.text = if (track != null) {
+            "${track.artist} - ${track.title}"
+        } else {
+            shoutcast.getName()
+        }
+    }
+
     override fun onMetaData(artist: String, title: String) {
         track =  Track(artist,title,true,false)
+        updateSongInfo()
 
     }
 
