@@ -16,6 +16,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
+import android.text.TextUtils
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.source.ExtractorMediaSource
@@ -132,6 +133,66 @@ class RadioService : Service(), Player.EventListener, AudioManager.OnAudioFocusC
         status = PlaybackStatus.IDLE
 
     }
+
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+
+        val action = intent.action
+
+        if (TextUtils.isEmpty(action)) {
+            return Service.START_NOT_STICKY
+        }
+
+        val result = audioManager?.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+
+            stop()
+
+            return Service.START_NOT_STICKY
+        }
+
+        when {
+            action!!.equals(ACTION_PLAY, ignoreCase = true) -> transportControls?.play()
+            action.equals(ACTION_PAUSE, ignoreCase = true) -> transportControls?.pause()
+            action.equals(ACTION_STOP, ignoreCase = true) -> transportControls?.stop()
+        }
+
+        return Service.START_NOT_STICKY
+    }
+
+    override fun onUnbind(intent: Intent): Boolean {
+
+        if (status == PlaybackStatus.IDLE) {
+            stopSelf()
+        }
+
+        return super.onUnbind(intent)
+    }
+
+    override fun onRebind(intent: Intent) {
+
+    }
+
+
+    override fun onDestroy() {
+
+        pause()
+
+        exoPlayer.release()
+        exoPlayer.removeListener(this)
+
+        if (telephonyManager != null) {
+            telephonyManager!!.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE)
+        }
+
+        notificationManager?.cancelNotify()
+
+        mediaSession?.release()
+
+        unregisterReceiver(becomingNoisyReceiver)
+
+        super.onDestroy()
+    }
+
 
     private val mediasSessionCallback = object : MediaSessionCompat.Callback() {
         override fun onPause() {
